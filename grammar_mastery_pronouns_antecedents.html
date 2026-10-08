@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronoun & Antecedent Quest</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        sans: ['Nunito', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#6C5CE7',
+                            lightPurple: '#A29BFE',
+                            blue: '#0984E3',
+                            green: '#00B894',
+                            yellow: '#FDCB6E',
+                            coral: '#FF7675',
+                            bg: '#F8F9FA'
+                        }
+                    },
+                    keyframes: {
+                        shake: {
+                            '0%, 100%': { transform: 'translateX(0)' },
+                            '20%, 60%': { transform: 'translateX(-8px)' },
+                            '40%, 80%': { transform: 'translateX(8px)' },
+                        },
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        pop: {
+                            '0%': { transform: 'scale(0.95)' },
+                            '50%': { transform: 'scale(1.05)' },
+                            '100%': { transform: 'scale(1)' },
+                        }
+                    },
+                    animation: {
+                        shake: 'shake 0.4s ease-in-out',
+                        bounceShort: 'bounceShort 0.5s ease-in-out',
+                        pop: 'pop 0.3s ease-out'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #F0F3F8;
+        }
+        .clickable-token {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-block;
+            margin: 2px 3px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+        }
+        .clickable-token:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .progress-bar-fill {
+            transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-white border-b-4 border-indigo-100 shadow-sm sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-purple text-white p-2.5 rounded-2xl shadow-md flex items-center justify-center">
+                    <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-fredoka text-xl sm:text-2xl font-bold text-slate-800 leading-tight">Pronoun Quest</h1>
+                    <p class="text-xs text-slate-500 font-semibold hidden sm:block">Identify Pronouns & Antecedents</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Sound Toggle -->
+                <button id="sound-btn" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition font-bold text-sm flex items-center gap-1.5" title="Toggle Sound">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-brand-purple"></i>
+                    <span class="hidden md:inline text-xs">Sound</span>
+                </button>
+                
+                <!-- Rule Helper Button -->
+                <button onclick="toggleModal('rules-modal')" class="px-3 py-2 rounded-xl bg-indigo-50 text-brand-purple hover:bg-indigo-100 border border-indigo-200 font-bold text-sm transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                    <span>Grammar Rules</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-3xl w-full mx-auto px-4 py-6 flex-grow flex flex-col gap-6">
+
+        <!-- Progress Tracker Card -->
+        <section class="bg-white rounded-3xl p-5 shadow-lg border-2 border-indigo-50 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="font-fredoka text-base font-bold text-slate-700">Mastery Progress</span>
+                    <span id="streak-badge" class="bg-amber-100 text-amber-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-fire text-amber-500"></i> <span id="streak-text">0/10 Streak</span>
+                    </span>
+                </div>
+                <div class="text-xs font-bold text-slate-500">
+                    High Score: <span id="max-streak" class="text-brand-purple font-black text-sm">0</span>/10
+                </div>
+            </div>
+
+            <!-- Visual Progress Bar with 10 segments -->
+            <div class="relative w-full h-6 bg-slate-100 rounded-full overflow-hidden p-1 shadow-inner border border-slate-200">
+                <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 rounded-full progress-bar-fill w-0"></div>
+                <!-- Segment Dividers -->
+                <div class="absolute inset-0 flex justify-between px-2 pointer-events-none opacity-20">
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                    <div class="w-0.5 h-full bg-slate-900"></div>
+                </div>
+            </div>
+            
+            <p class="text-xs text-slate-400 mt-2 text-center font-medium">
+                Get <span class="font-bold text-slate-600">10 correct answers in a row</span> to achieve Grammar Mastery status!
+            </p>
+        </section>
+
+        <!-- Question / Practice Card -->
+        <section id="question-card" class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-2 border-indigo-50 flex flex-col gap-6 relative">
+            
+            <!-- Category Tag & Question Prompt -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <span id="question-type-tag" class="px-3 py-1 bg-purple-100 text-brand-purple text-xs font-bold rounded-lg uppercase tracking-wide">
+                        Task Category
+                    </span>
+                    <span id="question-number" class="text-xs font-bold text-slate-400">
+                        Question Challenge
+                    </span>
+                </div>
+                <h2 id="question-prompt" class="font-fredoka text-xl sm:text-2xl font-bold text-slate-800 leading-snug">
+                    Loading question prompt...
+                </h2>
+            </div>
+
+            <!-- Sentence Interactive Display Container -->
+            <div id="sentence-container" class="bg-indigo-50/60 p-5 sm:p-6 rounded-2xl border-2 border-indigo-100/80 text-lg sm:text-xl font-semibold text-slate-800 leading-relaxed min-h-[100px] flex flex-wrap items-center justify-center text-center">
+                <!-- Interactive Word Tokens injected here dynamically -->
+            </div>
+
+            <!-- Multiple Choice Container (For Agreement Questions or Alternate Modes) -->
+            <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 hidden">
+                <!-- Option Buttons injected dynamically -->
+            </div>
+
+            <!-- Action Controls (Submit / Next) -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
+                <button id="reset-session-btn" onclick="confirmResetSession()" class="text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1 transition">
+                    <i class="fa-solid fa-rotate-left"></i> Restart Session
+                </button>
+                
+                <button id="submit-btn" onclick="checkWordSelectionAnswer()" class="px-6 py-3 bg-brand-purple hover:bg-indigo-700 active:scale-95 text-white font-fredoka font-bold rounded-2xl shadow-lg shadow-indigo-200 transition flex items-center gap-2">
+                    <span>Submit Choice</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Feedback Banner Area -->
+        <section id="feedback-card" class="hidden rounded-3xl p-6 shadow-xl border-2 transition-all duration-300 animate-pop">
+            <div class="flex items-start gap-4">
+                <div id="feedback-icon-bg" class="p-3 rounded-2xl text-white text-2xl flex-shrink-0 flex items-center justify-center">
+                    <i id="feedback-icon" class="fa-solid"></i>
+                </div>
+                <div class="flex-grow">
+                    <h3 id="feedback-title" class="font-fredoka text-xl font-bold mb-1">Feedback Title</h3>
+                    <p id="feedback-message" class="text-slate-700 text-sm sm:text-base leading-relaxed mb-3">
+                        Detailed feedback explanation...
+                    </p>
+                    <div id="pedagogical-tip" class="bg-white/80 p-3 rounded-xl border border-black/5 text-xs sm:text-sm font-semibold text-slate-600">
+                        <!-- Rule tip injected here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-5 flex justify-end">
+                <button id="next-btn" onclick="loadNextQuestion()" class="px-6 py-3 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-fredoka font-bold rounded-2xl shadow-md transition flex items-center gap-2">
+                    <span>Next Question</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs font-bold text-slate-400">
+        <p>Interactive Grammar Learning Tool • Pronouns & Antecedents Practice</p>
+    </footer>
+
+    <!-- Grammar Rules Reference Modal -->
+    <div id="rules-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative border-4 border-indigo-100 animate-pop">
+            <button onclick="toggleModal('rules-modal')" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-amber-100 text-amber-600 p-3 rounded-2xl">
+                    <i class="fa-solid fa-book-open text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="font-fredoka text-2xl font-bold text-slate-800">Grammar Helper Guide</h2>
+                    <p class="text-xs font-bold text-slate-400">Master the basics of Pronouns & Antecedents</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Section 1 -->
+                <div class="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100">
+                    <h3 class="font-fredoka text-lg font-bold text-brand-purple flex items-center gap-2">
+                        <i class="fa-solid fa-tag"></i> What is a Pronoun?
+                    </h3>
+                    <p class="text-sm text-slate-700 mt-1 leading-relaxed">
+                        A <strong>pronoun</strong> is a word that takes the place of a noun so you don't have to keep repeating the same noun.
+                    </p>
+                    <div class="mt-2 text-xs bg-white p-2.5 rounded-xl border border-indigo-100 text-slate-600">
+                        <span class="font-bold text-slate-800">Examples:</span> he, she, it, they, him, her, them, someone, who, which, their, standard.
+                    </div>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-100">
+                    <h3 class="font-fredoka text-lg font-bold text-emerald-700 flex items-center gap-2">
+                        <i class="fa-solid fa-link"></i> What is an Antecedent?
+                    </h3>
+                    <p class="text-sm text-slate-700 mt-1 leading-relaxed">
+                        An <strong>antecedent</strong> is the original noun (person, place, thing, or idea) that the pronoun refers back to or replaces. ("Ante" means <em>before</em>).
+                    </p>
+                    <div class="mt-2 text-xs bg-white p-2.5 rounded-xl border border-emerald-100 text-slate-600">
+                        <span class="font-bold text-slate-800">Example:</span> "When <strong><u>Maya</u></strong> lost her key, <strong><u>she</u></strong> called home."
+                        <br><span class="text-emerald-600 font-semibold">Maya</span> = Antecedent &bull; <span class="text-indigo-600 font-semibold">she</span> = Pronoun.
+                    </div>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-100">
+                    <h3 class="font-fredoka text-lg font-bold text-amber-700 flex items-center gap-2">
+                        <i class="fa-solid fa-scale-balanced"></i> Pronoun-Antecedent Agreement
+                    </h3>
+                    <p class="text-sm text-slate-700 mt-1 leading-relaxed">
+                        A pronoun must match its antecedent in <strong>number</strong> (singular or plural) and <strong>gender</strong>!
+                    </p>
+                    <ul class="list-disc list-inside text-xs text-slate-600 mt-2 space-y-1">
+                        <li><strong>Singular:</strong> The <u>cat</u> licked <u>its</u> paw.</li>
+                        <li><strong>Plural:</strong> The <u>dogs</u> wagged <u>their</u> tails.</li>
+                        <li><strong>Indefinite Pronouns:</strong> Words like <em>everyone, somebody, nobody</em> are singular. (e.g., "Everyone brought <u>his or her</u> pencil" or singular "their").</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <button onclick="toggleModal('rules-modal')" class="px-6 py-2.5 bg-brand-purple text-white font-fredoka font-bold rounded-xl shadow-md hover:bg-indigo-700 transition">
+                    Got it! Back to Practice
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Modal (10 In A Row) -->
+    <div id="mastery-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 text-center shadow-2xl border-4 border-amber-300 relative animate-pop">
+            <div class="w-24 h-24 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-full mx-auto flex items-center justify-center shadow-lg mb-4 animate-bounceShort">
+                <i class="fa-solid fa-crown text-white text-5xl"></i>
+            </div>
+            
+            <h2 class="font-fredoka text-3xl font-bold text-slate-800 mb-1">Mastery Achieved!</h2>
+            <p class="text-xs font-extrabold uppercase tracking-widest text-amber-500 mb-4">10 Correct In A Row!</p>
+
+            <p class="text-slate-600 text-sm leading-relaxed mb-6">
+                Outstanding work! You have proven complete mastery in identifying pronouns, antecedents, and agreement rules!
+            </p>
+
+            <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 mb-6 flex justify-around">
+                <div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Streak</div>
+                    <div class="font-fredoka text-2xl font-bold text-amber-600">10 / 10</div>
+                </div>
+                <div class="border-r border-amber-200"></div>
+                <div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Status</div>
+                    <div class="font-fredoka text-2xl font-bold text-emerald-600">Grammar Expert</div>
+                </div>
+            </div>
+
+            <button onclick="resetSessionAfterMastery()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-fredoka font-bold text-lg rounded-2xl shadow-lg transition transform active:scale-95">
+                Play Again (Keep Practicing)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Question Bank: 25+ rich, diverse grammar challenges
+        const questionBank = [
+            // Type A: Identify Pronoun (Word Token Click)
+            {
+                type: "identify_pronoun",
+                category: "Pronoun Identification",
+                prompt: "Click on the <u>pronoun</u> in the sentence below:",
+                sentence: ["When", "the", "storm", "hit,", "it", "rattled", "the", "windows."],
+                targetIndex: 4, // "it"
+                explanation: "'It' is the pronoun replacing the noun 'storm'.",
+                ruleTip: "Pronouns replace nouns to prevent repetition."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Pronoun Identification",
+                prompt: "Click on the <u>pronoun</u> in the sentence below:",
+                sentence: ["Lucas", "forgot", "his", "backpack", "on", "the", "school", "bus."],
+                targetIndex: 2, // "his"
+                explanation: "'His' is a possessive pronoun showing ownership of the backpack.",
+                ruleTip: "Possessive pronouns like 'his', 'her', and 'their' show ownership."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Pronoun Identification",
+                prompt: "Click on the <u>pronoun</u> in the sentence below:",
+                sentence: ["The", "teachers", "said", "they", "were", "excited", "for", "the", "field", "trip."],
+                targetIndex: 3, // "they"
+                explanation: "'They' is the pronoun taking the place of 'teachers'.",
+                ruleTip: "Plural pronouns replace plural nouns."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Pronoun Identification",
+                prompt: "Click on the <u>pronoun</u> in the sentence below:",
+                sentence: ["Samantha", "called", "her", "grandmother", "every", "Sunday."],
+                targetIndex: 2, // "her"
+                explanation: "'Her' is the pronoun referring to Samantha.",
+                ruleTip: "Gendered pronouns agree with the noun they replace."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Indefinite Pronouns",
+                prompt: "Click on the <u>indefinite pronoun</u> in the sentence below:",
+                sentence: ["Everyone", "enjoyed", "the", "delicious", "pizza", "at", "the", "party."],
+                targetIndex: 0, // "Everyone"
+                explanation: "'Everyone' is an indefinite pronoun because it refers to non-specific people.",
+                ruleTip: "Indefinite pronouns (everyone, somebody, nobody) do not point to a specific person or thing."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Relative Pronouns",
+                prompt: "Click on the <u>relative pronoun</u> in the sentence below:",
+                sentence: ["The", "dog", "that", "barked", "all", "night", "belonged", "to", "Mr.", "Davis."],
+                targetIndex: 2, // "that"
+                explanation: "'That' is a relative pronoun connecting the clause to 'dog'.",
+                ruleTip: "Relative pronouns (who, which, that) introduce clause information about a noun."
+            },
+
+            // Type B: Identify Antecedent (Word Token Click)
+            {
+                type: "identify_antecedent",
+                category: "Antecedent Identification",
+                prompt: "Find the <u>antecedent</u> for the highlighted pronoun <span class='text-brand-purple font-black uppercase underline'>'they'</span>:",
+                sentence: ["The", "dolphins", "leaped", "gracefully", "as", "they", "swam", "beside", "the", "boat."],
+                highlightIndex: 5, // "they"
+                targetIndex: 1, // "dolphins"
+                explanation: "'Dolphins' is the antecedent because 'they' replaces 'dolphins'.",
+                ruleTip: "The antecedent is the noun that gives the pronoun its meaning."
+            },
+            {
+                type: "identify_antecedent",
+                category: "Antecedent Identification",
+                prompt: "Find the <u>antecedent</u> for the highlighted pronoun <span class='text-brand-purple font-black uppercase underline'>'she'</span>:",
+                sentence: ["Before", "Maria", "went", "to", "sleep,", "she", "read", "two", "chapters."],
+                highlightIndex: 5, // "she"
+                targetIndex: 1, // "Maria"
+                explanation: "'Maria' is the antecedent because 'she' refers directly back to Maria.",
+                ruleTip: "Antecedents usually come BEFORE the pronoun in a sentence."
+            },
+            {
+                type: "identify_antecedent",
+                category: "Antecedent Identification",
+                prompt: "Find the <u>antecedent</u> for the highlighted pronoun <span class='text-brand-purple font-black uppercase underline'>'it'</span>:",
+                sentence: ["The", "old", "clock", "ticked", "loudly", "until", "it", "finally", "stopped."],
+                highlightIndex: 6, // "it"
+                targetIndex: 2, // "clock"
+                explanation: "'Clock' is the antecedent that the singular pronoun 'it' replaces.",
+                ruleTip: "Inanimate objects use singular neuter pronouns like 'it'."
+            },
+            {
+                type: "identify_antecedent",
+                category: "Compound Antecedents",
+                prompt: "Click on the <u>antecedent</u> for the highlighted pronoun <span class='text-brand-purple font-black uppercase underline'>'their'</span>:",
+                sentence: ["Leo", "and", "Noah", "packed", "their", "suitcases", "for", "camping."],
+                highlightIndex: 4, // "their"
+                targetIndex: [0, 2], // "Leo and Noah" (Either token or compound)
+                explanation: "The compound antecedent is 'Leo and Noah', which forms a plural subject requiring 'their'.",
+                ruleTip: "Two singular nouns joined by 'and' make a plural antecedent!"
+            },
+            {
+                type: "identify_antecedent",
+                category: "Antecedent Identification",
+                prompt: "Find the <u>antecedent</u> for the highlighted pronoun <span class='text-brand-purple font-black uppercase underline'>'he'</span>:",
+                sentence: ["Although", "the", "coach", "was", "tired,", "he", "continued", "the", "practice."],
+                highlightIndex: 5, // "he"
+                targetIndex: 2, // "coach"
+                explanation: "'Coach' is the noun antecedent that 'he' replaces.",
+                ruleTip: "The antecedent can be separated from the pronoun by introductory clauses."
+            },
+            {
+                type: "identify_antecedent",
+                category: "Distant Antecedents",
+                prompt: "Find the <u>antecedent</u> for the highlighted pronoun <span class='text-brand-purple font-black uppercase underline'>'its'</span>:",
+                sentence: ["The", "tree", "lost", "all", "of", "its", "leaves", "during", "autumn."],
+                highlightIndex: 5, // "its"
+                targetIndex: 1, // "tree"
+                explanation: "'Tree' is the antecedent for the possessive pronoun 'its'.",
+                ruleTip: "Note: 'its' (possessive) has no apostrophe, while 'it's' means 'it is'."
+            },
+
+            // Type C: Agreement & Selection (Multiple Choice Buttons)
+            {
+                type: "multiple_choice",
+                category: "Pronoun-Antecedent Agreement",
+                prompt: "Choose the correct pronoun to complete the sentence with proper agreement:",
+                sentenceText: "Each of the girls finished _____ project on time.",
+                options: ["her", "their", "its", "them"],
+                correctIndex: 0, // "her"
+                explanation: "'Each' is a singular indefinite pronoun, so it requires a singular pronoun ('her').",
+                ruleTip: "Words like 'each', 'everyone', and 'anybody' are grammatically singular."
+            },
+            {
+                type: "multiple_choice",
+                category: "Pronoun-Antecedent Agreement",
+                prompt: "Which pronoun correctly completes this sentence?",
+                sentenceText: "Neither James nor his brothers could find _____ shoes.",
+                options: ["his", "their", "its", "her"],
+                correctIndex: 1, // "their"
+                explanation: "When antecedents are joined by 'nor', the pronoun agrees with the closest antecedent ('brothers' = plural = 'their').",
+                ruleTip: "With 'neither/nor' or 'either/or', agree with the closest noun!"
+            },
+            {
+                type: "multiple_choice",
+                category: "Agreement Error Spotting",
+                prompt: "Identify the sentence that has a pronoun-antecedent agreement ERROR:",
+                sentenceText: "",
+                options: [
+                    "The astronauts boarded their spacecraft.",
+                    "If a student is late, they must get a pass.",
+                    "The team won its first championship game.",
+                    "Every boy must bring their own lunch."
+                ],
+                correctIndex: 3, // "Every boy must bring their own lunch." (In strict classical grammar, 'Every boy' is singular masculine -> 'his')
+                explanation: "'Every boy' is singular and masculine, so traditional grammar requires 'his' instead of plural 'their'.",
+                ruleTip: "'Every' makes a subject singular."
+            },
+            {
+                type: "multiple_choice",
+                category: "Pronoun-Antecedent Agreement",
+                prompt: "Select the pronoun that correctly fits the sentence:",
+                sentenceText: "The flock of birds changed _____ flight direction mid-air.",
+                options: ["its", "their", "they", "them"],
+                correctIndex: 0, // "its"
+                explanation: "'Flock' is a singular collective noun acting as one unit, so it takes singular 'its'.",
+                ruleTip: "Collective nouns (flock, team, class) take singular pronouns when acting as a single unit."
+            },
+            {
+                type: "multiple_choice",
+                category: "Indefinite Pronoun Agreement",
+                prompt: "Choose the correct pronoun to complete the sentence:",
+                sentenceText: "Somebody left _____ umbrella under the classroom bench.",
+                options: ["their", "they", "its", "them"],
+                correctIndex: 0, // "their"
+                explanation: "'Somebody' is an singular indefinite pronoun. Modern English widely accepts singular 'their'.",
+                ruleTip: "Singular 'their' is standard when referring to a person of unspecified gender."
+            },
+            {
+                type: "multiple_choice",
+                category: "Relative Pronoun Selection",
+                prompt: "Choose the correct relative pronoun:",
+                sentenceText: "The scientist _____ discovered the new element won a Nobel Prize.",
+                options: ["who", "which", "whose", "where"],
+                correctIndex: 0, // "who"
+                explanation: "Use 'who' when referring back to people ('the scientist'). Use 'which' for objects.",
+                ruleTip: "People = Who / Whom | Objects & Animals = Which / That."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Pronoun Identification",
+                prompt: "Click on the <u>possessive pronoun</u> in this sentence:",
+                sentence: ["That", "shiny", "blue", "bicycle", "is", "mine."],
+                targetIndex: 5, // "mine"
+                explanation: "'Mine' is a possessive pronoun showing ownership of the bicycle.",
+                ruleTip: "Possessive pronouns stand alone without needing the noun right after them."
+            },
+            {
+                type: "identify_antecedent",
+                category: "Antecedent Identification",
+                prompt: "Find the <u>antecedent</u> for the pronoun <span class='text-brand-purple font-black uppercase underline'>'they'</span>:",
+                sentence: ["When", "the", "cookies", "were", "ready,", "they", "smelled", "delicious."],
+                highlightIndex: 5, // "they"
+                targetIndex: 2, // "cookies"
+                explanation: "'Cookies' is the plural antecedent replaced by 'they'.",
+                ruleTip: "Plural non-human objects also use 'they/them/their'."
+            },
+            {
+                type: "multiple_choice",
+                category: "Pronoun-Antecedent Agreement",
+                prompt: "Select the pronoun that agrees in number:",
+                sentenceText: "Both of the girls submitted _____ artwork to the contest.",
+                options: ["their", "her", "its", "she"],
+                correctIndex: 0, // "their"
+                explanation: "'Both' is a plural indefinite pronoun, requiring the plural pronoun 'their'.",
+                ruleTip: "Plural indefinite pronouns include: both, few, many, several."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Pronoun Identification",
+                prompt: "Click on the <u>pronoun</u> in the sentence below:",
+                sentence: ["Give", "the", "book", "to", "him", "before", "class", "starts."],
+                targetIndex: 4, // "him"
+                explanation: "'Him' is an object pronoun.",
+                ruleTip: "Object pronouns (me, him, her, us, them) receive the action in a sentence."
+            },
+            {
+                type: "identify_antecedent",
+                category: "Antecedent Identification",
+                prompt: "Find the <u>antecedent</u> for <span class='text-brand-purple font-black uppercase underline'>'she'</span>:",
+                sentence: ["Olivia", "checked", "her", "watch", "because", "she", "was", "late."],
+                highlightIndex: 5, // "she"
+                targetIndex: 0, // "Olivia"
+                explanation: "'Olivia' is the subject antecedent for 'she'.",
+                ruleTip: "Pronouns must agree in gender with female, male, or neutral antecedents."
+            },
+            {
+                type: "multiple_choice",
+                category: "Pronoun Agreement",
+                prompt: "Which pronoun completes the sentence correctly?",
+                sentenceText: "Either David or Marcus will bring _____ guitar to practice.",
+                options: ["his", "their", "they", "its"],
+                correctIndex: 0, // "his"
+                explanation: "When singular nouns are connected by 'or', use a singular pronoun ('his').",
+                ruleTip: "Singular antecedents joined by 'or' take a singular pronoun."
+            },
+            {
+                type: "identify_pronoun",
+                category: "Reflexive Pronouns",
+                prompt: "Click on the <u>reflexive pronoun</u> in the sentence below:",
+                sentence: ["The", "cat", "cleaned", "itself", "after", "eating", "fish."],
+                targetIndex: 3, // "itself"
+                explanation: "'Itself' is a reflexive pronoun referring back to the cat.",
+                ruleTip: "Reflexive pronouns end in '-self' or '-selves'."
+            }
+        ];
+
+        // App State Management
+        let currentStreak = 0;
+        let maxStreak = 0;
+        let selectedTokenIndex = null;
+        let currentQuestion = null;
+        let questionOrder = [];
+        let questionIndex = 0;
+        let soundEnabled = true;
+
+        // Simple Web Audio API Synthesizer for sound effects
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioContext();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    // Happy arpeggio
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'incorrect') {
+                    // Gentle low buzz tone
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.setValueAtTime(140, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'mastery') {
+                    // Fanfare chime
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.12); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.24); // G5
+                    osc.frequency.setValueAtTime(1046.50, now + 0.36); // C6
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            const btn = document.getElementById('sound-btn');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-brand-purple';
+                btn.classList.remove('opacity-60');
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+                btn.classList.add('opacity-60');
+            }
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            shuffleQuestions();
+            loadCurrentQuestion();
+            updateStreakUI();
+        };
+
+        function shuffleQuestions() {
+            questionOrder = [...Array(questionBank.length).keys()];
+            // Fisher-Yates Shuffle
+            for (let i = questionOrder.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+            }
+            questionIndex = 0;
+        }
+
+        function loadCurrentQuestion() {
+            // Reset question UI states
+            selectedTokenIndex = null;
+            document.getElementById('feedback-card').classList.add('hidden');
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('submit-btn').disabled = false;
+            
+            const qIdx = questionOrder[questionIndex];
+            currentQuestion = questionBank[qIdx];
+
+            // Render Header Labels
+            document.getElementById('question-type-tag').innerText = currentQuestion.category;
+            document.getElementById('question-number').innerText = `Challenge ${questionIndex + 1}`;
+            document.getElementById('question-prompt').innerHTML = currentQuestion.prompt;
+
+            const sentenceContainer = document.getElementById('sentence-container');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (currentQuestion.type === 'identify_pronoun' || currentQuestion.type === 'identify_antecedent') {
+                // Interactive Token Mode
+                sentenceContainer.classList.remove('hidden');
+                optionsContainer.classList.add('hidden');
+                sentenceContainer.innerHTML = '';
+
+                currentQuestion.sentence.forEach((word, idx) => {
+                    const token = document.createElement('span');
+                    token.className = 'clickable-token bg-white border-2 border-slate-200 text-slate-700 hover:border-brand-purple font-semibold shadow-sm';
+                    token.innerText = word;
+                    token.dataset.index = idx;
+
+                    // If antecedent question, highlight the pronoun target in sentence
+                    if (currentQuestion.type === 'identify_antecedent' && idx === currentQuestion.highlightIndex) {
+                        token.className = 'clickable-token bg-purple-100 border-2 border-brand-purple text-brand-purple font-black shadow-md';
+                        token.title = "Target Pronoun";
+                    }
+
+                    token.onclick = () => selectToken(idx, token);
+                    sentenceContainer.appendChild(token);
+                });
+
+            } else if (currentQuestion.type === 'multiple_choice') {
+                // Multiple Choice Mode
+                sentenceContainer.classList.remove('hidden');
+                optionsContainer.classList.remove('hidden');
+
+                if (currentQuestion.sentenceText) {
+                    sentenceContainer.innerHTML = `<span class="italic text-slate-700">"${currentQuestion.sentenceText}"</span>`;
+                } else {
+                    sentenceContainer.classList.add('hidden');
+                }
+
+                optionsContainer.innerHTML = '';
+                currentQuestion.options.forEach((optText, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn p-4 rounded-2xl border-2 border-slate-200 hover:border-brand-purple hover:bg-indigo-50/50 text-left font-bold text-slate-700 transition flex items-center justify-between shadow-sm';
+                    btn.innerHTML = `
+                        <span>${optText}</span>
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center text-xs text-transparent check-mark">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                    `;
+                    btn.onclick = () => selectOption(idx, btn);
+                    optionsContainer.appendChild(btn);
+                });
+
+                // Hide Submit button for direct option clicking in multiple choice
+                document.getElementById('submit-btn').classList.add('hidden');
+            }
+        }
+
+        function selectToken(index, element) {
+            // Prevent selecting highlighted target pronoun in antecedent search
+            if (currentQuestion.type === 'identify_antecedent' && index === currentQuestion.highlightIndex) {
+                return;
+            }
+
+            // Unselect previous
+            const tokens = document.querySelectorAll('.clickable-token');
+            tokens.forEach((t) => {
+                if (parseInt(t.dataset.index) !== currentQuestion.highlightIndex) {
+                    t.className = 'clickable-token bg-white border-2 border-slate-200 text-slate-700 hover:border-brand-purple font-semibold shadow-sm';
+                }
+            });
+
+            selectedTokenIndex = index;
+            element.className = 'clickable-token bg-brand-purple text-white border-2 border-brand-purple font-black shadow-md transform scale-105';
+        }
+
+        function selectOption(index, element) {
+            // Clear choices
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => {
+                b.className = 'option-btn p-4 rounded-2xl border-2 border-slate-200 hover:border-brand-purple hover:bg-indigo-50/50 text-left font-bold text-slate-700 transition flex items-center justify-between shadow-sm';
+                b.querySelector('.check-mark').className = 'w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center text-xs text-transparent check-mark';
+            });
+
+            selectedTokenIndex = index;
+            element.className = 'option-btn p-4 rounded-2xl border-2 border-brand-purple bg-indigo-50 text-left font-bold text-brand-purple transition flex items-center justify-between shadow-md';
+            element.querySelector('.check-mark').className = 'w-6 h-6 rounded-full bg-brand-purple text-white flex items-center justify-center text-xs check-mark';
+
+            // Auto submit multiple choice choice
+            checkAnswer(index);
+        }
+
+        function checkWordSelectionAnswer() {
+            if (selectedTokenIndex === null) {
+                showToast("Please tap or click a word first!");
+                return;
+            }
+            checkAnswer(selectedTokenIndex);
+        }
+
+        function checkAnswer(userChoice) {
+            let isCorrect = false;
+
+            if (currentQuestion.type === 'identify_pronoun' || currentQuestion.type === 'identify_antecedent') {
+                if (Array.isArray(currentQuestion.targetIndex)) {
+                    isCorrect = currentQuestion.targetIndex.includes(userChoice);
+                } else {
+                    isCorrect = (userChoice === currentQuestion.targetIndex);
+                }
+            } else if (currentQuestion.type === 'multiple_choice') {
+                isCorrect = (userChoice === currentQuestion.correctIndex);
+            }
+
+            const feedbackCard = document.getElementById('feedback-card');
+            const feedbackIconBg = document.getElementById('feedback-icon-bg');
+            const feedbackIcon = document.getElementById('feedback-icon');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackMsg = document.getElementById('feedback-message');
+            const pedagogicalTip = document.getElementById('pedagogical-tip');
+
+            feedbackCard.classList.remove('hidden');
+
+            if (isCorrect) {
+                // Correct logic
+                currentStreak++;
+                if (currentStreak > maxStreak) maxStreak = currentStreak;
+                playSound('correct');
+
+                feedbackCard.className = 'rounded-3xl p-6 shadow-xl border-2 bg-emerald-50/90 border-emerald-200 animate-pop';
+                feedbackIconBg.className = 'p-3 rounded-2xl bg-emerald-500 text-white text-2xl flex-shrink-0 flex items-center justify-center';
+                feedbackIcon.className = 'fa-solid fa-circle-check';
+                feedbackTitle.className = 'font-fredoka text-xl font-bold text-emerald-800 mb-1';
+                feedbackTitle.innerText = getRandomEncouragement();
+                feedbackMsg.innerText = currentQuestion.explanation;
+                pedagogicalTip.innerHTML = `<span class="font-bold text-emerald-700">Grammar Rule:</span> ${currentQuestion.ruleTip}`;
+
+                // Check for 10 Streak Victory
+                if (currentStreak >= 10) {
+                    setTimeout(() => {
+                        triggerMasteryCelebration();
+                    }, 500);
+                }
+
+            } else {
+                // Incorrect logic (Streak resets to 0)
+                currentStreak = 0;
+                playSound('incorrect');
+
+                feedbackCard.className = 'rounded-3xl p-6 shadow-xl border-2 bg-rose-50/90 border-rose-200 animate-shake';
+                feedbackIconBg.className = 'p-3 rounded-2xl bg-rose-500 text-white text-2xl flex-shrink-0 flex items-center justify-center';
+                feedbackIcon.className = 'fa-solid fa-circle-xmark';
+                feedbackTitle.className = 'font-fredoka text-xl font-bold text-rose-800 mb-1';
+                feedbackTitle.innerText = "Nice try! Streak reset to 0.";
+
+                let correctAnswerText = "";
+                if (currentQuestion.type === 'multiple_choice') {
+                    correctAnswerText = `The correct answer was: <strong>"${currentQuestion.options[currentQuestion.correctIndex]}"</strong>.`;
+                } else {
+                    const targetWord = Array.isArray(currentQuestion.targetIndex) 
+                        ? currentQuestion.targetIndex.map(i => currentQuestion.sentence[i]).join(" ")
+                        : currentQuestion.sentence[currentQuestion.targetIndex];
+                    correctAnswerText = `The correct target word was: <strong>"${targetWord}"</strong>.`;
+                }
+
+                feedbackMsg.innerHTML = `${correctAnswerText} ${currentQuestion.explanation}`;
+                pedagogicalTip.innerHTML = `<span class="font-bold text-rose-700">Remember:</span> ${currentQuestion.ruleTip}`;
+            }
+
+            updateStreakUI();
+            
+            // Disable further selection on current card
+            document.getElementById('submit-btn').classList.add('hidden');
+        }
+
+        function updateStreakUI() {
+            document.getElementById('streak-text').innerText = `${currentStreak}/10 Streak`;
+            document.getElementById('max-streak').innerText = maxStreak;
+
+            const percentage = Math.min((currentStreak / 10) * 100, 100);
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = `${percentage}%`;
+
+            const badge = document.getElementById('streak-badge');
+            if (currentStreak > 0) {
+                badge.className = "bg-amber-400 text-amber-950 text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 animate-bounceShort";
+            } else {
+                badge.className = "bg-slate-200 text-slate-600 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1";
+            }
+        }
+
+        function loadNextQuestion() {
+            questionIndex++;
+            if (questionIndex >= questionOrder.length) {
+                shuffleQuestions();
+            }
+            loadCurrentQuestion();
+        }
+
+        function triggerMasteryCelebration() {
+            playSound('mastery');
+            toggleModal('mastery-modal');
+
+            // Fire Confetti
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function resetSessionAfterMastery() {
+            toggleModal('mastery-modal');
+            currentStreak = 0;
+            updateStreakUI();
+            shuffleQuestions();
+            loadCurrentQuestion();
+        }
+
+        function confirmResetSession() {
+            if (confirm("Are you sure you want to reset your practice streak to 0?")) {
+                currentStreak = 0;
+                updateStreakUI();
+                shuffleQuestions();
+                loadCurrentQuestion();
+            }
+        }
+
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function getRandomEncouragement() {
+            const list = [
+                "Awesome Job!", 
+                "Spot On!", 
+                "Grammar Genius!", 
+                "You Got It!", 
+                "Brilliant Work!", 
+                "Perfect Identification!"
+            ];
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-2xl z-50 animate-pop';
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
